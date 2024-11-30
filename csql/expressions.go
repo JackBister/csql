@@ -1,3 +1,5 @@
+//go:generate stringer -type=ExpressionType
+//go:generate stringer -type=ValueType
 package csql
 
 import (
@@ -11,8 +13,8 @@ import (
 type ExpressionType int
 
 const (
-	ExpressionNop = iota
-	ExpressionEquals
+	ExpressionNop ExpressionType = iota
+	ExpressionOperator
 	ExpressionLiteral
 	ExpressionColumnReference
 )
@@ -20,7 +22,7 @@ const (
 type ValueType int
 
 const (
-	ValueTypeUnknown = iota
+	ValueTypeUnknown ValueType = iota
 	ValueTypeString
 	ValueTypeBool
 	ValueTypeInt
@@ -142,10 +144,13 @@ type OperationResult struct {
 
 type Expression interface {
 	Execute(i int, record []Value) (*OperationResult, error)
+	FillNils(e Expression)
 	Type() ExpressionType
 }
 
 type BinaryExpr interface {
+	GetLHS() Expression
+	GetRHS() Expression
 	SetLHS(e Expression)
 	SetRHS(e Expression)
 }

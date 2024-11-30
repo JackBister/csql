@@ -7,74 +7,154 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-func Parse(tokens []Token) [][]Expression {
-	fmt.Println(tokens)
-	exprs := [][]Expression{}
-	currentExprs := []Expression{}
-	currentColumn := 0
-	var lastExpr Expression = &Nop{}
-	for i := 0; i < len(tokens); i++ {
-		t := tokens[i]
-		var currentExpr Expression = nil
-		if t.Typ == TokenTypeComma {
-			currentExprs = append(currentExprs, lastExpr)
-			currentColumn++
-			lastExpr = &Nop{}
-		} else if t.Typ == TokenTypeOperator {
-			if len(tokens) < i+2 {
-				panic("not enough tokens")
-			}
-			if t.Str == "=" {
-				fmt.Println("op=")
-				if lastExpr.Type() == ExpressionNop {
-					lastExpr = &ColumnReferenceExpression{
-						index: currentColumn,
-					}
-				}
-				currentExpr = &OpEquals{
-					lhs: lastExpr,
-					rhs: nil,
-				}
-			} else if t.Str == "$" {
-				if len(tokens) < i+2 {
-					panic("not enough tokens")
-				}
-				nextToken := tokens[i+1]
-				if nextToken.Typ != TokenTypeString {
-					panic("invalid token type after $, must be string")
-				}
-				index, err := strconv.ParseInt(nextToken.Str, 10, 32)
-				if err != nil {
-					panic("failed to parse column reference to int")
-				}
-				currentExpr = &ColumnReferenceExpression{
-					index: int(index),
-				}
-				i++
-			} else {
-				panic("unknown operator")
-			}
-		} else if t.Typ == TokenTypeString {
-			currentExpr = parseLiteral(t.Str)
-		} else if t.Typ == TokenTypeNewLine {
-			currentExprs = append(currentExprs, lastExpr)
-			exprs = append(exprs, currentExprs)
-			currentExprs = []Expression{}
-			lastExpr = &Nop{}
-			currentColumn = 0
-			currentExpr = nil
+func Parse(tokens []Token) (Expression, int, error) {
+	if len(tokens) == 0 {
+		return nil, 0, nil
+	}
+
+	tok := tokens[0]
+	consumed := 0
+
+	var head Expression = &Nop{}
+	if tok.Typ == TokenTypeString {
+		literal := parseLiteral(tok.Str)
+		if literal == nil {
+			return nil, consumed, fmt.Errorf("failed to parse literal. string was: %v", tok.Str)
 		}
-		if currentExpr != nil {
-			if b, ok := lastExpr.(BinaryExpr); ok {
-				b.SetRHS(currentExpr)
-			} else {
-				lastExpr = currentExpr
+		head = literal
+		consumed++
+	} else if tok.Typ == TokenTypeOperator {
+		if tok.Str == "$" {
+			if len(tokens) < 1 {
+				return nil, consumed, fmt.Errorf("not enough tokens, expected at least 1 after $ operator")
 			}
+			nextTok := tokens[1]
+			if nextTok.Typ != TokenTypeString {
+				return nil, consumed, fmt.Errorf("expected string token after $ operator")
+			}
+			index, err := strconv.ParseInt(nextTok.Str, 10, 32)
+			if err != nil {
+				return nil, consumed, fmt.Errorf("failed to parse column reference to int. string was: %v", nextTok.Str)
+			}
+			head = &ColumnReferenceExpression{
+				index: int(index),
+			}
+			consumed += 2
+		} else if tok.Str == "=" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpEquals{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == "<" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpLt{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == ">" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpGt{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == "!" {
+			consumed += 1
+			tokens = tokens[1:]
+			inner, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpNeg{
+				inner: inner,
+			}
+			consumed += consumed2
 		}
 	}
-	currentExprs = append(currentExprs, lastExpr)
-	exprs = append(exprs, currentExprs)
-	return exprs
+
+	return head, consumed, nil
+}
+
+func ParseLine(tokens []Token) ([]Expression, int, error) {
+	res := []Expression{}
+	columnIdx := 0
+	consumed := 0
+	for len(tokens) > 0 {
+		expr, consumed2, err := Parse(tokens)
+		if err != nil {
+			return nil, 0, err
+		}
+		consumed += consumed2
+		tokens = tokens[consumed2:]
+
+		if len(tokens) > 0 && tokens[0].Typ == TokenTypeOperator {
+			expr2, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+
+			if b, ok := expr2.(BinaryExpr); ok {
+				b.SetLHS(expr)
+				expr = expr2
+			} else {
+				return nil, 0, fmt.Errorf("expected binary expression but got: %v", expr2)
+			}
+
+			consumed += consumed2
+			tokens = tokens[consumed2:]
+		}
+		expr.FillNils(&ColumnReferenceExpression{
+			index: columnIdx,
+		})
+		res = append(res, expr)
+
+		if len(tokens) > 0 {
+			if tokens[0].Typ == TokenTypeNewLine {
+				return res, consumed, nil
+			}
+			if tokens[0].Typ != TokenTypeComma {
+				return nil, 0, fmt.Errorf("unexpected token type, expected comma but got: %v", tokens[0])
+			}
+			columnIdx++
+			consumed += 1
+			tokens = tokens[1:]
+		}
+	}
+	return res, consumed, nil
+}
+
+func ParseQuery(tokens []Token) ([][]Expression, error) {
+	res := [][]Expression{}
+	for len(tokens) > 0 {
+		exprs, consumed, err := ParseLine(tokens)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, exprs)
+		tokens = tokens[consumed:]
+		if len(tokens) > 0 {
+			if tokens[0].Typ != TokenTypeNewLine {
+				return nil, fmt.Errorf("unexpected token type, expected new line but got: %v", tokens[0])
+			}
+			tokens = tokens[1:]
+		}
+	}
+	return res, nil
 }
 
 func parseLiteral(str string) *LiteralExpression {

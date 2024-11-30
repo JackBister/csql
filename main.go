@@ -29,7 +29,10 @@ func main() {
 	query := args[0]
 
 	tokens := csql.Tokenize(query)
-	operations := csql.Parse(tokens)
+	operations, err := csql.ParseQuery(tokens)
+	if err != nil {
+		panic(err)
+	}
 
 	rs, err := csql.Execute(operations, os.Stdin, options)
 	if err != nil {

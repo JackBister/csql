@@ -5,7 +5,7 @@ import "strings"
 type TokenType int
 
 const (
-	TokenTypeComma = iota
+	TokenTypeComma TokenType = iota
 	TokenTypeString
 	TokenTypeOperator
 	TokenTypeNewLine
@@ -16,7 +16,7 @@ type Token struct {
 	Str string
 }
 
-var operators = "$="
+var operators = "$!=><"
 
 func Tokenize(query string) []Token {
 	res := []Token{}

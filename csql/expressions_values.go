@@ -8,6 +8,9 @@ func (o *Nop) Execute(i int, record []Value) (*OperationResult, error) {
 	return &OperationResult{}, nil
 }
 
+func (o *Nop) FillNils(e Expression) {
+}
+
 func (o *Nop) Type() ExpressionType {
 	return ExpressionNop
 }
@@ -24,6 +27,9 @@ func (l *LiteralExpression) Execute(i int, record []Value) (*OperationResult, er
 	return &OperationResult{
 		value: &l.value,
 	}, nil
+}
+
+func (o *LiteralExpression) FillNils(e Expression) {
 }
 
 func (l *LiteralExpression) Type() ExpressionType {
@@ -45,6 +51,9 @@ func (c *ColumnReferenceExpression) Execute(i int, record []Value) (*OperationRe
 	return &OperationResult{
 		value: &record[c.index],
 	}, nil
+}
+
+func (o *ColumnReferenceExpression) FillNils(e Expression) {
 }
 
 func (c *ColumnReferenceExpression) Type() ExpressionType {
