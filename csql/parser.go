@@ -2,10 +2,15 @@ package csql
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/araddon/dateparse"
 )
+
+var aggregationNames = []string{
+	"sum",
+}
 
 func Parse(tokens []Token) (Expression, int, error) {
 	if len(tokens) == 0 {
@@ -23,6 +28,32 @@ func Parse(tokens []Token) (Expression, int, error) {
 		}
 		head = literal
 		consumed++
+		tokens = tokens[consumed:]
+		if len(tokens) > 0 && tokens[0].Typ == TokenTypeLParen {
+			argList, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, fmt.Errorf("failed to parse argument list for function call: %w", err)
+			}
+			if argList.Type() != ExpressionExprList {
+				return nil, 0, fmt.Errorf("failed to parse function call: expected expression list but got: %v", argList)
+			}
+			consumed += consumed2
+			if tok.Str == "group" {
+				head = &GroupingExpr{
+					arguments: *argList.(*ExpressionList),
+				}
+			} else if slices.Contains(aggregationNames, tok.Str) {
+				head = &AggregatingExpr{
+					aggregationName: tok.Str,
+					argument:        argList.(*ExpressionList).exprs[0],
+				}
+			} else {
+				head = &Funcall{
+					funcName:  tok.Str,
+					arguments: *argList.(*ExpressionList),
+				}
+			}
+		}
 	} else if tok.Typ == TokenTypeOperator {
 		if tok.Str == "$" {
 			if len(tokens) < 1 {
@@ -84,6 +115,33 @@ func Parse(tokens []Token) (Expression, int, error) {
 				inner: inner,
 			}
 			consumed += consumed2
+		}
+	} else if tok.Typ == TokenTypeLParen {
+		exprs := []Expression{}
+		consumed += 1
+		tokens = tokens[1:]
+		for {
+			arg, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			exprs = append(exprs, arg)
+			consumed += consumed2
+			tokens = tokens[consumed2:]
+			if len(tokens) == 0 {
+				return nil, 0, fmt.Errorf("failed to parse expression list: expected right paren but ran out of tokens")
+			}
+			if tokens[0].Typ == TokenTypeRParen {
+				consumed += 1
+				break
+			}
+			if tokens[0].Typ == TokenTypeComma {
+				consumed += 1
+				tokens = tokens[1:]
+			}
+		}
+		head = &ExpressionList{
+			exprs: exprs,
 		}
 	}
 

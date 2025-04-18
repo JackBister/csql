@@ -1,6 +1,7 @@
 package csql_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -211,6 +212,241 @@ func TestNeg(t *testing.T) {
 		t.FailNow()
 	}
 	if len(res) != 2 {
+		t.FailNow()
+	}
+}
+
+func TestFuncall(t *testing.T) {
+	testCsv := `contrary,desktop,1
+	continue,printing,2
+	established,description,3
+	variations,combined,4
+	available,repetition,5`
+	query := "has(cont)"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+}
+
+func TestFuncallColumnRef(t *testing.T) {
+	testCsv := `contrary,desktop,1
+	continue,printing,2
+	established,description,3
+	variations,combined,4
+	available,repetition,5`
+	query := "has($1,des)"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+}
+
+func TestAggregationGroupBy(t *testing.T) {
+	testCsv := `Peter,Part0,100,50
+Peter,Part1,200,60
+Peter,Part2,133,220
+Peter,Part3,400,10
+Peter,Part4,250,30
+Peter,Part5,105,40
+Charles,Part0,10,50
+Charles,Part1,20,60
+Charles,Part2,53,220
+Charles,Part3,66,10
+Charles,Part4,123,30
+Charles,Part5,44,40`
+	query := "group()"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Peter" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" {
+		t.FailNow()
+	}
+}
+
+func TestAggregationSumColumnReference(t *testing.T) {
+	testCsv := `Peter,Part0,100,50
+Peter,Part1,200,60
+Peter,Part2,133,220
+Peter,Part3,400,10
+Peter,Part4,250,30
+Peter,Part5,105,40
+Charles,Part0,10,50
+Charles,Part1,20,60
+Charles,Part2,53,220
+Charles,Part3,66,10
+Charles,Part4,123,30
+Charles,Part5,44,40`
+	query := "group(),sum($2)"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Peter" {
+		t.FailNow()
+	}
+	if res[0][1] != "1188" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" {
+		t.FailNow()
+	}
+	if res[1][1] != "316" {
+		t.FailNow()
+	}
+}
+
+func TestAggregationSumImplicitColumn(t *testing.T) {
+	testCsv := `Peter,Part0,100,50
+Peter,Part1,200,60
+Peter,Part2,133,220
+Peter,Part3,400,10
+Peter,Part4,250,30
+Peter,Part5,105,40
+Charles,Part0,10,50
+Charles,Part1,20,60
+Charles,Part2,53,220
+Charles,Part3,66,10
+Charles,Part4,123,30
+Charles,Part5,44,40`
+	query := "group(),,sum()"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Peter" {
+		t.FailNow()
+	}
+	if res[0][1] != "1188" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" {
+		t.FailNow()
+	}
+	if res[1][1] != "316" {
+		t.FailNow()
+	}
+}
+
+func TestAggregationSumGroupByMultiple(t *testing.T) {
+	testCsv := `Peter,Part0,100,50
+Peter,Part1,200,60
+Peter,Part2,133,220
+Peter,Part3,400,10
+Peter,Part4,250,30
+Peter,Part5,105,40
+Charles,Part0,10,50
+Charles,Part1,20,60
+Charles,Part2,53,220
+Charles,Part3,66,10
+Charles,Part4,123,30
+Charles,Part5,44,40`
+	query := "group($0,$1),sum($2)"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	fmt.Println(res, err)
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Peter" {
+		t.FailNow()
+	}
+	if res[0][1] != "Part1" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" {
+		t.FailNow()
+	}
+	if res[1][1] != "316" {
+		t.FailNow()
+	}
+}
+
+func TestAggregationSumUngrouped(t *testing.T) {
+	testCsv := `Peter,Part0,100,50
+Peter,Part1,200,60
+Peter,Part2,133,220
+Peter,Part3,400,10
+Peter,Part4,250,30
+Peter,Part5,105,40
+Charles,Part0,10,50
+Charles,Part1,20,60
+Charles,Part2,53,220
+Charles,Part3,66,10
+Charles,Part4,123,30
+Charles,Part5,44,40`
+	query := "sum($2)"
+
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 1 {
+		t.FailNow()
+	}
+	if res[0][0] != "1504" {
 		t.FailNow()
 	}
 }

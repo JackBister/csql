@@ -5,6 +5,7 @@ package csql
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -17,6 +18,10 @@ const (
 	ExpressionOperator
 	ExpressionLiteral
 	ExpressionColumnReference
+	ExpressionExprList
+	ExpressionFuncall
+	ExpressionGrouping
+	ExpressionAggregating
 )
 
 type ValueType int
@@ -28,6 +33,7 @@ const (
 	ValueTypeInt
 	ValueTypeDouble
 	ValueTypeDate
+	ValueTypeList
 )
 
 type Value struct {
@@ -134,6 +140,18 @@ func (v *Value) String() string {
 		return strconv.FormatFloat(v.value.(float64), 'f', -1, 64)
 	} else if v.typ == ValueTypeDate {
 		return v.value.(time.Time).String()
+	} else if v.typ == ValueTypeList {
+		res := strings.Builder{}
+		res.WriteRune('[')
+		asList := v.value.([]Value)
+		for i, v := range asList {
+			res.WriteString(v.String())
+			if i != len(asList)-1 {
+				res.WriteString(", ")
+			}
+		}
+		res.WriteRune(']')
+		return res.String()
 	}
 	panic("unhandled value type " + fmt.Sprint(v.typ))
 }

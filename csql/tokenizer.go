@@ -1,3 +1,4 @@
+//go:generate stringer -type=TokenType
 package csql
 
 import "strings"
@@ -9,6 +10,8 @@ const (
 	TokenTypeString
 	TokenTypeOperator
 	TokenTypeNewLine
+	TokenTypeLParen
+	TokenTypeRParen
 )
 
 type Token struct {
@@ -48,6 +51,24 @@ func Tokenize(query string) []Token {
 			})
 			str.Reset()
 			res = append(res, Token{Typ: TokenTypeNewLine, Str: ""})
+		} else if c == '(' {
+			if str.Len() > 0 {
+				res = append(res, Token{
+					Typ: TokenTypeString,
+					Str: str.String(),
+				})
+				str.Reset()
+			}
+			res = append(res, Token{Typ: TokenTypeLParen})
+		} else if c == ')' {
+			if str.Len() > 0 {
+				res = append(res, Token{
+					Typ: TokenTypeString,
+					Str: str.String(),
+				})
+				str.Reset()
+			}
+			res = append(res, Token{Typ: TokenTypeRParen})
 		} else {
 			str.WriteRune(c)
 		}

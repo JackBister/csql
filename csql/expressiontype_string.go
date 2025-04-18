@@ -12,11 +12,13 @@ func _() {
 	_ = x[ExpressionOperator-1]
 	_ = x[ExpressionLiteral-2]
 	_ = x[ExpressionColumnReference-3]
+	_ = x[ExpressionExprList-4]
+	_ = x[ExpressionFuncall-5]
 }
 
-const _ExpressionType_name = "ExpressionNopExpressionOperatorExpressionLiteralExpressionColumnReference"
+const _ExpressionType_name = "ExpressionNopExpressionOperatorExpressionLiteralExpressionColumnReferenceExpressionExprListExpressionFuncall"
 
-var _ExpressionType_index = [...]uint8{0, 13, 31, 48, 73}
+var _ExpressionType_index = [...]uint8{0, 13, 31, 48, 73, 91, 108}
 
 func (i ExpressionType) String() string {
 	if i < 0 || i >= ExpressionType(len(_ExpressionType_index)-1) {
