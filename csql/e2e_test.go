@@ -379,17 +379,13 @@ Charles,Part5,44,40`
 
 func TestAggregationSumGroupByMultiple(t *testing.T) {
 	testCsv := `Peter,Part0,100,50
-Peter,Part1,200,60
-Peter,Part2,133,220
-Peter,Part3,400,10
-Peter,Part4,250,30
-Peter,Part5,105,40
+Peter,Part0,200,60
+Peter,Part1,133,220
+Peter,Part1,400,10
 Charles,Part0,10,50
-Charles,Part1,20,60
-Charles,Part2,53,220
-Charles,Part3,66,10
-Charles,Part4,123,30
-Charles,Part5,44,40`
+Charles,Part0,20,60
+Charles,Part1,53,220
+Charles,Part1,66,10`
 	query := "group($0,$1),sum($2)"
 
 	tokens := csql.Tokenize(query)
@@ -402,19 +398,43 @@ Charles,Part5,44,40`
 	if err != nil {
 		t.FailNow()
 	}
-	if len(res) != 2 {
+	if len(res) != 4 {
 		t.FailNow()
 	}
 	if res[0][0] != "Peter" {
 		t.FailNow()
 	}
-	if res[0][1] != "Part1" {
+	if res[0][1] != "Part0" {
 		t.FailNow()
 	}
-	if res[1][0] != "Charles" {
+	if res[0][2] != "300" {
 		t.FailNow()
 	}
-	if res[1][1] != "316" {
+	if res[1][0] != "Peter" {
+		t.FailNow()
+	}
+	if res[1][1] != "Part1" {
+		t.FailNow()
+	}
+	if res[1][2] != "533" {
+		t.FailNow()
+	}
+	if res[2][0] != "Charles" {
+		t.FailNow()
+	}
+	if res[2][1] != "Part0" {
+		t.FailNow()
+	}
+	if res[2][2] != "30" {
+		t.FailNow()
+	}
+	if res[3][0] != "Charles" {
+		t.FailNow()
+	}
+	if res[3][1] != "Part1" {
+		t.FailNow()
+	}
+	if res[3][2] != "119" {
 		t.FailNow()
 	}
 }
