@@ -3,13 +3,17 @@ package main
 import (
 	"encoding/csv"
 	"flag"
+	"fmt"
 	"os"
 
-	"github.com/jackbister/csql/csql"
+	"github.com/jackbister/csql/pkg/csql"
 )
+
+var versionString string // This must be set using -ldflags "-X main.versionString=<version>" when building for --version to work
 
 var printOps = flag.Bool("ops", false, "Print operations")
 var printTypes = flag.Bool("types", false, "")
+var printVersion = flag.Bool("version", false, "Print version and exit")
 var separator = flag.String("sep", ",", "")
 var skip = flag.Int("skip", 0, "")
 
@@ -17,6 +21,14 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
+
+	if *printVersion {
+		if versionString == "" {
+			versionString = "unknown"
+		}
+		fmt.Println(versionString)
+		return
+	}
 
 	if len(args) < 1 {
 		panic("No query provided")

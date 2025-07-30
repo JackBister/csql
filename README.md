@@ -35,6 +35,7 @@ While CSQL started out as a joke, it is pretty powerful. It is useful for querie
     - [`-sep=<STR>`](#-sepstr)
     - [`-skip=<N>`](#-skipn)
     - [`-types`](#-types)
+    - [`-version`](#-version)
 - [Language](#language)
   - [Operations](#operations)
     - [Filtering operations](#filtering-operations)
@@ -91,6 +92,10 @@ Skips the first `N` lines in the input. This can be used to skip any header rows
 ### `-types`
 
 Prints the types of the columns in the result. Used for debugging.
+
+### `-version`
+
+Prints the version of CSQL and exits.
 
 # Language
 
