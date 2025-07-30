@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jackbister/csql/csql"
+	"github.com/jackbister/csql/pkg/csql"
 )
 
 var testCsv = `1,a,b,c
