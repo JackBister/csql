@@ -8,6 +8,7 @@ import (
 	"github.com/jackbister/csql/csql"
 )
 
+var printOps = flag.Bool("ops", false, "Print operations")
 var printTypes = flag.Bool("types", false, "")
 var separator = flag.String("sep", ",", "")
 var skip = flag.Int("skip", 0, "")
@@ -22,6 +23,7 @@ func main() {
 	}
 
 	options := csql.NewOptions()
+	options.PrintOps = *printOps
 	options.PrintTypes = *printTypes
 	options.Separator = *separator
 	options.Skip = *skip

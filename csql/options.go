@@ -1,6 +1,7 @@
 package csql
 
 type Options struct {
+	PrintOps   bool
 	PrintTypes bool
 	Separator  string
 	Skip       int
@@ -8,6 +9,7 @@ type Options struct {
 
 func NewOptions() Options {
 	return Options{
+		PrintOps:   false,
 		PrintTypes: false,
 		Separator:  ",",
 		Skip:       0,

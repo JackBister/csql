@@ -14,7 +14,11 @@ type GroupOperations struct {
 }
 
 func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]string, error) {
-	fmt.Println(operations)
+	if options.PrintOps {
+		for _, ops := range operations {
+			fmt.Println(ops)
+		}
+	}
 	csvReader := csv.NewReader(reader)
 	sep, _ := utf8.DecodeRuneInString(options.Separator)
 	if sep == utf8.RuneError {
