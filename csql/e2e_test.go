@@ -644,3 +644,64 @@ limit(2)`
 		t.FailNow()
 	}
 }
+
+func TestAddColumnReference(t *testing.T) {
+	testCsv := `1,2`
+	query := "$0+$1"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 1 {
+		t.FailNow()
+	}
+	if res[0][0] != "3" {
+		t.FailNow()
+	}
+}
+
+func TestAddLiteral(t *testing.T) {
+	testCsv := `1,2`
+	query := "+3"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 1 {
+		t.FailNow()
+	}
+	if res[0][0] != "4" {
+		t.FailNow()
+	}
+}
+
+func TestSumComplexExpression(t *testing.T) {
+	testCsv := `1,2
+3,4`
+	query := "sum(+$1)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 1 {
+		t.FailNow()
+	}
+	if res[0][0] != "10" {
+		t.FailNow()
+	}
+}

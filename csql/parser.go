@@ -158,6 +158,52 @@ func Parse(tokens []Token) (Expression, int, error) {
 				inner: inner,
 			}
 			consumed += consumed2
+		} else if tok.Str == "+" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpAdd{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == "-" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpSub{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == "*" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpMul{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else if tok.Str == "/" {
+			consumed += 1
+			tokens = tokens[1:]
+			rhs, consumed2, err := Parse(tokens)
+			if err != nil {
+				return nil, 0, err
+			}
+			head = &OpDiv{
+				rhs: rhs,
+			}
+			consumed += consumed2
+		} else {
+			return nil, 0, fmt.Errorf("unknown operator: %v", tok.Str)
 		}
 	} else if tok.Typ == TokenTypeLParen {
 		exprs := []Expression{}
@@ -168,7 +214,13 @@ func Parse(tokens []Token) (Expression, int, error) {
 			if err != nil {
 				return nil, 0, err
 			}
-			exprs = append(exprs, arg)
+			if b, ok := arg.(BinaryExpr); ok && len(exprs) > 0 {
+				lastExpr := exprs[len(exprs)-1]
+				b.SetLHS(lastExpr)
+				exprs[len(exprs)-1] = arg
+			} else {
+				exprs = append(exprs, arg)
+			}
 			consumed += consumed2
 			tokens = tokens[consumed2:]
 			if len(tokens) == 0 {

@@ -19,7 +19,7 @@ type Token struct {
 	Str string
 }
 
-var operators = "$!=><"
+var operators = "$!=><+-*/"
 
 func Tokenize(query string) []Token {
 	res := []Token{}
