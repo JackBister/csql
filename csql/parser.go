@@ -47,6 +47,49 @@ func Parse(tokens []Token) (Expression, int, error) {
 					aggregationName: tok.Str,
 					argument:        argList.(*ExpressionList).exprs[0],
 				}
+			} else if tok.Str == "order" {
+				argListExprList := argList.(*ExpressionList)
+				argListLen := len(argListExprList.exprs)
+				if argListLen != 1 && argListLen != 2 {
+					return nil, 0, fmt.Errorf("order by requires one or two arguments, got: %d", len(argList.(*ExpressionList).exprs))
+				}
+				head = &OrderingExpr{
+					argument:  argList.(*ExpressionList).exprs[0],
+					direction: OrderDirectionAsc,
+				}
+				if argListLen == 2 {
+					orderExpr := argList.(*ExpressionList).exprs[1]
+					if orderExpr.Type() != ExpressionLiteral {
+						return nil, 0, fmt.Errorf("order by direction must be a literal, got: %v", orderExpr)
+					}
+					litExpr := orderExpr.(*LiteralExpression)
+					if litExpr.value.typ != ValueTypeString {
+						return nil, 0, fmt.Errorf("order by direction must be a string literal, got: %v", orderExpr)
+					}
+					switch litExpr.value.value {
+					case "desc":
+						head.(*OrderingExpr).direction = OrderDirectionDesc
+					case "asc":
+						head.(*OrderingExpr).direction = OrderDirectionAsc
+					default:
+						return nil, 0, fmt.Errorf("order by direction must be either 'asc' or 'desc', got: %v", litExpr.value.value)
+					}
+				}
+			} else if tok.Str == "limit" {
+				argListExprList := argList.(*ExpressionList)
+				if len(argListExprList.exprs) != 1 {
+					return nil, 0, fmt.Errorf("limit requires exactly one argument, got: %d", len(argListExprList.exprs))
+				}
+				if argListExprList.exprs[0].Type() != ExpressionLiteral {
+					return nil, 0, fmt.Errorf("limit argument must be a literal, got: %v", argListExprList.exprs[0])
+				}
+				litExpr := argListExprList.exprs[0].(*LiteralExpression)
+				if litExpr.value.typ != ValueTypeInt {
+					return nil, 0, fmt.Errorf("limit argument must be an integer literal, got: %v", argListExprList.exprs[0])
+				}
+				head = &LimitExpr{
+					limit: litExpr.value.value.(int64),
+				}
 			} else {
 				head = &Funcall{
 					funcName:  tok.Str,

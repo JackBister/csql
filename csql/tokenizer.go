@@ -45,10 +45,12 @@ func Tokenize(query string) []Token {
 			}
 			res = append(res, Token{Typ: TokenTypeOperator, Str: string(c)})
 		} else if c == '\n' {
-			res = append(res, Token{
-				Typ: TokenTypeString,
-				Str: str.String(),
-			})
+			if str.Len() > 0 {
+				res = append(res, Token{
+					Typ: TokenTypeString,
+					Str: str.String(),
+				})
+			}
 			str.Reset()
 			res = append(res, Token{Typ: TokenTypeNewLine, Str: ""})
 		} else if c == '(' {

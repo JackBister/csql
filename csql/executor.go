@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"slices"
 	"unicode/utf8"
 )
 
@@ -47,6 +48,8 @@ func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]
 		}
 		groupingValues := map[string][]Value{}
 		groupedResults := map[string][]Value{}
+		orderOperations := make([]*OrderingExpr, 0)
+		limitOperations := make([]*LimitExpr, 0)
 
 		for _, op := range ops {
 			if op.Type() == ExpressionGrouping {
@@ -57,6 +60,16 @@ func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]
 			} else if op.Type() == ExpressionAggregating {
 				fnc := op.(*AggregatingExpr)
 				groupOperations.projectionExprs = append(groupOperations.projectionExprs, fnc)
+			} else if op.Type() == ExpressionOrdering {
+				orderOperations = append(orderOperations, op.(*OrderingExpr))
+				if len(orderOperations) > MaxOrderingExprCount {
+					return nil, fmt.Errorf("too many ordering expressions, maximum is %d", MaxOrderingExprCount)
+				}
+			} else if op.Type() == ExpressionLimit {
+				limitOperations = append(limitOperations, op.(*LimitExpr))
+				if len(limitOperations) > 1 {
+					return nil, fmt.Errorf("cannot have more than one limit expression in a line")
+				}
 			}
 		}
 
@@ -118,6 +131,8 @@ func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]
 				} else {
 					groupedResults[groupString] = groupResults
 				}
+			} else if len(orderOperations) > 0 || len(limitOperations) > 0 {
+				nextResultSet = append(nextResultSet, record)
 			} else {
 				excluded := false
 				for i, op := range ops {
@@ -150,6 +165,77 @@ func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]
 				nextResultSet = append(nextResultSet, gr)
 			}
 		}
+		if len(orderOperations) > 0 {
+			slices.SortFunc(nextResultSet, func(iv, jv []Value) int {
+				var sortValueI int64 = 0
+				var sortValueJ int64 = 0
+				for i, op := range orderOperations {
+					resI, err := op.argument.Execute(i, iv)
+					if err != nil {
+						panic(err)
+					}
+					resJ, err := op.argument.Execute(i, jv)
+					if err != nil {
+						panic(err)
+					}
+					if resI.value == nil || resJ.value == nil {
+						continue
+					}
+
+					eq := OpEquals{
+						lhs: &LiteralExpression{
+							value: *resI.value,
+						},
+						rhs: &LiteralExpression{
+							value: *resJ.value,
+						},
+					}
+					eqRes, err := eq.Execute(0, nil)
+					if err != nil {
+						panic(err)
+					}
+					if eqRes.value.value.(bool) {
+						continue
+					}
+
+					lt := OpLt{
+						lhs: &LiteralExpression{
+							value: *resI.value,
+						},
+						rhs: &LiteralExpression{
+							value: *resJ.value,
+						},
+					}
+
+					ltRes, err := lt.Execute(0, nil)
+					if err != nil {
+						panic(err)
+					}
+
+					if op.direction == OrderDirectionAsc {
+						if !ltRes.value.value.(bool) {
+							sortValueI += powInt64(10, MaxOrderingExprCount-int64(i)+1)
+						} else {
+							sortValueJ += powInt64(10, MaxOrderingExprCount-int64(i)+1)
+						}
+					} else {
+						if ltRes.value.value.(bool) {
+							sortValueI += powInt64(10, MaxOrderingExprCount-int64(i)+1)
+						} else {
+							sortValueJ += powInt64(10, MaxOrderingExprCount-int64(i)+1)
+						}
+					}
+				}
+				return int(sortValueI - sortValueJ)
+			})
+		}
+		if len(limitOperations) > 0 {
+			limit := limitOperations[0].limit
+			if limit < 0 {
+				return nil, fmt.Errorf("limit cannot be negative")
+			}
+			nextResultSet = nextResultSet[:limit]
+		}
 		resultSet = nextResultSet
 	}
 
@@ -174,4 +260,15 @@ func Execute(operations [][]Expression, reader io.Reader, options Options) ([][]
 	}
 
 	return resultSetStrings, nil
+}
+
+func powInt64(base, exp int64) int64 {
+	if exp < 0 {
+		return 0
+	}
+	result := int64(1)
+	for i := int64(0); i < exp; i++ {
+		result *= base
+	}
+	return result
 }

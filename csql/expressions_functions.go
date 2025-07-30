@@ -201,3 +201,66 @@ func (f *AggregatingExpr) String() string {
 func (f *AggregatingExpr) Type() ExpressionType {
 	return ExpressionAggregating
 }
+
+const MaxOrderingExprCount = 10
+
+type OrderDirection int
+
+const (
+	OrderDirectionAsc OrderDirection = iota
+	OrderDirectionDesc
+)
+
+type OrderingExpr struct {
+	argument  Expression
+	direction OrderDirection
+}
+
+func (f *OrderingExpr) Execute(i int, record []Value) (*OperationResult, error) {
+	res, err := f.argument.Execute(i, record)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil || res.value == nil {
+		return nil, fmt.Errorf("ordering expression returned nil value")
+	}
+	return res, nil
+}
+
+func (f *OrderingExpr) FillNils(e Expression) {
+	if f.argument.Type() == ExpressionNop {
+		f.argument = e
+	} else if f.argument != nil {
+		f.argument.FillNils(e)
+	} else {
+		f.argument = e
+	}
+}
+
+func (f *OrderingExpr) String() string {
+	return fmt.Sprintf("(Ordering: Arg={%v} Direction=%v)", f.argument, f.direction)
+}
+
+func (f *OrderingExpr) Type() ExpressionType {
+	return ExpressionOrdering
+}
+
+type LimitExpr struct {
+	limit int64
+}
+
+func (f *LimitExpr) Execute(i int, record []Value) (*OperationResult, error) {
+	return nil, fmt.Errorf("limit expressions cannot be executed")
+}
+
+func (f *LimitExpr) FillNils(e Expression) {
+	// Limit expressions do not have arguments to fill
+}
+
+func (f *LimitExpr) String() string {
+	return fmt.Sprintf("(Limit: %d)", f.limit)
+}
+
+func (f *LimitExpr) Type() ExpressionType {
+	return ExpressionLimit
+}

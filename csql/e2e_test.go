@@ -401,40 +401,22 @@ Charles,Part1,66,10`
 	if len(res) != 4 {
 		t.FailNow()
 	}
-	if res[0][0] != "Peter" {
-		t.FailNow()
+	hasExpected := map[string]bool{
+		"Peter,Part0,300":   true,
+		"Peter,Part1,533":   true,
+		"Charles,Part0,30":  true,
+		"Charles,Part1,119": true,
 	}
-	if res[0][1] != "Part0" {
-		t.FailNow()
+	for _, r := range res {
+		if len(r) != 3 {
+			t.FailNow()
+		}
+		if !hasExpected[strings.Join(r, ",")] {
+			t.FailNow()
+		}
+		delete(hasExpected, strings.Join(r, ","))
 	}
-	if res[0][2] != "300" {
-		t.FailNow()
-	}
-	if res[1][0] != "Peter" {
-		t.FailNow()
-	}
-	if res[1][1] != "Part1" {
-		t.FailNow()
-	}
-	if res[1][2] != "533" {
-		t.FailNow()
-	}
-	if res[2][0] != "Charles" {
-		t.FailNow()
-	}
-	if res[2][1] != "Part0" {
-		t.FailNow()
-	}
-	if res[2][2] != "30" {
-		t.FailNow()
-	}
-	if res[3][0] != "Charles" {
-		t.FailNow()
-	}
-	if res[3][1] != "Part1" {
-		t.FailNow()
-	}
-	if res[3][2] != "119" {
+	if len(hasExpected) != 0 {
 		t.FailNow()
 	}
 }
@@ -467,6 +449,198 @@ Charles,Part5,44,40`
 		t.FailNow()
 	}
 	if res[0][0] != "1504" {
+		t.FailNow()
+	}
+}
+
+func TestOrderBy(t *testing.T) {
+	testCsv := `Peter,5
+Peter,4
+Peter,3
+Peter,2
+Peter,1
+Peter,0`
+
+	query := "order($1,asc)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 6 {
+		t.FailNow()
+	}
+	if res[0][1] != "0" {
+		t.FailNow()
+	}
+	if res[1][1] != "1" {
+		t.FailNow()
+	}
+	if res[2][1] != "2" {
+		t.FailNow()
+	}
+	if res[3][1] != "3" {
+		t.FailNow()
+	}
+	if res[4][1] != "4" {
+		t.FailNow()
+	}
+	if res[5][1] != "5" {
+		t.FailNow()
+	}
+}
+
+func TestOrderByDesc(t *testing.T) {
+	testCsv := `Peter,3
+Peter,2
+Peter,1
+Peter,4
+Peter,5
+Peter,0`
+	query := "order($1,desc)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 6 {
+		t.FailNow()
+	}
+	if res[0][1] != "5" {
+		t.FailNow()
+	}
+	if res[1][1] != "4" {
+		t.FailNow()
+	}
+	if res[2][1] != "3" {
+		t.FailNow()
+	}
+	if res[3][1] != "2" {
+		t.FailNow()
+	}
+	if res[4][1] != "1" {
+		t.FailNow()
+	}
+	if res[5][1] != "0" {
+		t.FailNow()
+	}
+}
+
+func TestOrderByMultiple(t *testing.T) {
+	testCsv := `Peter,5
+Charles,4
+Peter,4
+Charles,5`
+	query := "order($0,asc),order($1,asc)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 4 {
+		t.FailNow()
+	}
+	if res[0][0] != "Charles" || res[0][1] != "4" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" || res[1][1] != "5" {
+		t.FailNow()
+	}
+	if res[2][0] != "Peter" || res[2][1] != "4" {
+		t.FailNow()
+	}
+	if res[3][0] != "Peter" || res[3][1] != "5" {
+		t.FailNow()
+	}
+}
+
+func TestLimit(t *testing.T) {
+	testCsv := `Peter,5
+Charles,4
+Peter,4
+Charles,5`
+	query := "limit(2)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Peter" || res[0][1] != "5" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" || res[1][1] != "4" {
+		t.FailNow()
+	}
+}
+
+func TestOrderByThenLimit(t *testing.T) {
+	testCsv := `Peter,5
+Charles,4
+Peter,4
+Charles,5`
+	query := "order($0,asc),limit(2)"
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Charles" || res[0][1] != "4" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" || res[1][1] != "5" {
+		t.FailNow()
+	}
+}
+
+func TestOrderByThenLimitNewLine(t *testing.T) {
+	testCsv := `Peter,5
+Charles,4
+Peter,4
+Charles,5`
+	query := `order($0,asc)
+limit(2)`
+	tokens := csql.Tokenize(query)
+	exprs, err := csql.ParseQuery(tokens)
+	if err != nil {
+		t.FailNow()
+	}
+	res, err := csql.Execute(exprs, strings.NewReader(testCsv), csql.NewOptions())
+	if err != nil {
+		t.FailNow()
+	}
+	if len(res) != 2 {
+		t.FailNow()
+	}
+	if res[0][0] != "Charles" || res[0][1] != "4" {
+		t.FailNow()
+	}
+	if res[1][0] != "Charles" || res[1][1] != "5" {
 		t.FailNow()
 	}
 }

@@ -22,6 +22,8 @@ const (
 	ExpressionFuncall
 	ExpressionGrouping
 	ExpressionAggregating
+	ExpressionOrdering
+	ExpressionLimit
 )
 
 type ValueType int
