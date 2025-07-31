@@ -29,6 +29,8 @@ While CSQL started out as a joke, it is pretty powerful. It is useful for querie
 
 
 - [Comma Separated Query Language (CSQL)](#comma-separated-query-language-csql)
+- [Installation](#installation)
+- [Building](#building)
 - [Usage](#usage)
   - [Command Line Flags](#command-line-flags)
     - [`-ops`](#-ops)
@@ -60,6 +62,17 @@ While CSQL started out as a joke, it is pretty powerful. It is useful for querie
   - [Count the number of rows grouped by the first column](#count-the-number-of-rows-grouped-by-the-first-column)
   - [Find all rows where the first column is NOT equal to "ABC"](#find-all-rows-where-the-first-column-is-not-equal-to-abc)
 
+# Installation
+
+You can download CSQL from the [releases page](https://github.com/JackBister/csql/releases). The release contains a zip file for each platform, which contains a single executable file. You can place this file in your `PATH` to make it available as a command line tool.
+
+# Building
+
+```sh
+git clone git@github.com:JackBister/csql.git
+cd csql
+go build -o csql
+```
 
 # Usage
 
@@ -69,7 +82,7 @@ csql [-ops] [-sep=<STR>] [-skip=<N>] [-types] <query>
 
 The input CSV file to be queried must be provided on stdin. To query a CSV file, you can use the `<` operator in your shell, like so:
 
-```
+```sh
 csql '=' < myfile.csv
 ```
 
