@@ -101,7 +101,7 @@ Prints the version of CSQL and exits.
 
 A CSQL query consists of multiple steps separated by new lines.
 
- Each step consists of a list of operations.
+Each step consists of a list of operations.
 
 When the query executes, it will apply the first step to each line in the input CSV and create an output result set.
 
