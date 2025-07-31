@@ -303,11 +303,19 @@ Charles,Part5,44,40`
 	if len(res) != 2 {
 		t.FailNow()
 	}
-	if res[0][0] != "Peter" {
-		t.FailNow()
+	expected := map[string]bool{
+		"Peter":   true,
+		"Charles": true,
 	}
-	if res[1][0] != "Charles" {
-		t.FailNow()
+	for _, row := range res {
+		key := strings.Join(row, ",")
+		if !expected[key] {
+			t.Fatalf("unexpected row: %v", row)
+		}
+		delete(expected, key)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("missing expected rows: %v", expected)
 	}
 }
 
@@ -336,19 +344,21 @@ Charles,Part5,44,40`
 		t.FailNow()
 	}
 	if len(res) != 2 {
-		t.FailNow()
+		t.Fatalf("expected 2 rows, got %d", len(res))
 	}
-	if res[0][0] != "Peter" {
-		t.FailNow()
+	expected := map[string]bool{
+		"Peter,1188":  true,
+		"Charles,316": true,
 	}
-	if res[0][1] != "1188" {
-		t.FailNow()
+	for _, row := range res {
+		key := strings.Join(row, ",")
+		if !expected[key] {
+			t.Fatalf("unexpected row: %v", row)
+		}
+		delete(expected, key)
 	}
-	if res[1][0] != "Charles" {
-		t.FailNow()
-	}
-	if res[1][1] != "316" {
-		t.FailNow()
+	if len(expected) != 0 {
+		t.Fatalf("missing expected rows: %v", expected)
 	}
 }
 
@@ -379,17 +389,19 @@ Charles,Part5,44,40`
 	if len(res) != 2 {
 		t.FailNow()
 	}
-	if res[0][0] != "Peter" {
-		t.FailNow()
+	expected := map[string]bool{
+		"Peter,1188":  true,
+		"Charles,316": true,
 	}
-	if res[0][1] != "1188" {
-		t.FailNow()
+	for _, row := range res {
+		key := strings.Join(row, ",")
+		if !expected[key] {
+			t.Fatalf("unexpected row: %v", row)
+		}
+		delete(expected, key)
 	}
-	if res[1][0] != "Charles" {
-		t.FailNow()
-	}
-	if res[1][1] != "316" {
-		t.FailNow()
+	if len(expected) != 0 {
+		t.Fatalf("missing expected rows: %v", expected)
 	}
 }
 
@@ -417,7 +429,7 @@ Charles,Part1,66,10`
 	if len(res) != 4 {
 		t.FailNow()
 	}
-	hasExpected := map[string]bool{
+	expected := map[string]bool{
 		"Peter,Part0,300":   true,
 		"Peter,Part1,533":   true,
 		"Charles,Part0,30":  true,
@@ -427,13 +439,14 @@ Charles,Part1,66,10`
 		if len(r) != 3 {
 			t.FailNow()
 		}
-		if !hasExpected[strings.Join(r, ",")] {
-			t.FailNow()
+		key := strings.Join(r, ",")
+		if !expected[key] {
+			t.Fatalf("unexpected row: %v", r)
 		}
-		delete(hasExpected, strings.Join(r, ","))
+		delete(expected, key)
 	}
-	if len(hasExpected) != 0 {
-		t.FailNow()
+	if len(expected) != 0 {
+		t.Fatalf("missing expected rows: %v", expected)
 	}
 }
 
